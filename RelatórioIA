@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Interativo - Detecção de Objetos em Clash of Clans</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 
+    Chosen Palette: Warm Neutrals & Muted Blue. Background: bg-slate-50, Cards: bg-white, Primary Accent: bg-blue-600, Chart Accent 1: bg-blue-500, Chart Accent 2: bg-sky-500.
+    Application Structure Plan: A single-page dashboard layout with a top navigation bar for smooth scrolling. The structure flows from high-level to specific: 1. Header & Overview with key stats. 2. A visual flowchart of the project methodology. 3. The core interactive Performance Analysis section with a dynamic chart and detail cards. 4. A summary of recommendations and conclusions. This structure was chosen to transform the linear report into an exploratory experience, allowing users to quickly grasp the main results and then dive deep into the per-class performance data, which is the most valuable part of the analysis.
+    Visualization & Content Choices: 
+    - Overall Metrics (Goal: Inform) -> Stat Cards (HTML/Tailwind) for quick high-level understanding.
+    - Project Workflow (Goal: Organize) -> Flowchart-style diagram (HTML/Tailwind/Unicode Arrows) to visually map the project steps.
+    - Per-Class Performance (Goal: Compare/Analyze) -> Interactive Bar Chart (Chart.js/Canvas) to allow comparison across 16 classes. Buttons will update the chart's dataset to display different metrics (P, R, mAP50, mAP95), making the data explorable.
+    - Detailed Insights (Goal: Inform/Contextualize) -> Dynamic Detail Card (HTML/JS) updated on chart click, linking quantitative data to the qualitative analysis from the report.
+    - Recommendations (Goal: Conclude) -> Styled List (HTML/Tailwind) for clear, actionable takeaways.
+    - Justification: This combination of static info displays and interactive visualizations allows the user to control the information they see, catering to both quick overviews and deep-dive analysis, thereby maximizing usability and understanding of the report's content.
+    CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* bg-slate-50 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 1024px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 500px;
+            }
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        .nav-link {
+            transition: color 0.3s, border-color 0.3s;
+        }
+        .nav-link:hover {
+            color: #2563eb; /* hover:text-blue-600 */
+        }
+        .metric-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-metric.active {
+            background-color: #3b82f6; /* bg-blue-500 */
+            color: white;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-slate-800">Relatório YOLOv8</div>
+            <div class="hidden md:flex space-x-6">
+                <a href="#overview" class="nav-link text-slate-600">Visão Geral</a>
+                <a href="#methodology" class="nav-link text-slate-600">Metodologia</a>
+                <a href="#performance" class="nav-link text-slate-600">Análise de Desempenho</a>
+                <a href="#conclusion" class="nav-link text-slate-600">Conclusão</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <section id="title" class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-4">Detecção de Objetos em Clash of Clans com YOLOv8</h1>
+            <p class="text-lg text-slate-600 max-w-3xl mx-auto">Um relatório interativo sobre o processo de treinamento, avaliação e os insights obtidos de um modelo de visão computacional.</p>
+        </section>
+
+        <section id="overview" class="mb-16">
+            <h2 class="text-3xl font-bold text-slate-800 mb-8 text-center">Visão Geral do Desempenho</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="metric-card bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-slate-500 mb-2">mAP50</h3>
+                    <p class="text-4xl font-bold text-blue-600">0.722</p>
+                </div>
+                <div class="metric-card bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-slate-500 mb-2">mAP50-95</h3>
+                    <p class="text-4xl font-bold text-sky-600">0.570</p>
+                </div>
+                <div class="metric-card bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-slate-500 mb-2">Precisão Geral</h3>
+                    <p class="text-4xl font-bold text-emerald-600">0.713</p>
+                </div>
+                <div class="metric-card bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-slate-500 mb-2">Recall Geral</h3>
+                    <p class="text-4xl font-bold text-amber-600">0.625</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="methodology" class="mb-16 bg-white p-8 rounded-xl shadow-md">
+            <h2 class="text-3xl font-bold text-slate-800 mb-8 text-center">Metodologia do Projeto</h2>
+            <p class="text-center text-slate-600 mb-10 max-w-3xl mx-auto">O projeto seguiu um fluxo de trabalho padrão de Machine Learning, desde a preparação do ambiente até a exportação do modelo final. Cada etapa foi crucial para o desenvolvimento de uma solução robusta para detecção de objetos no jogo.</p>
+            <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 text-center">
+                <div class="p-4 bg-slate-100 rounded-lg w-full md:w-auto">
+                    <span class="text-2xl">🖥️</span>
+                    <p class="font-semibold mt-2">1. Setup</p>
+                    <p class="text-sm text-slate-500">Instalação de dependências</p>
+                </div>
+                <div class="text-2xl text-slate-400 font-light transform md:rotate-0 rotate-90">→</div>
+                <div class="p-4 bg-slate-100 rounded-lg w-full md:w-auto">
+                    <span class="text-2xl">☁️</span>
+                    <p class="font-semibold mt-2">2. Coleta de Dados</p>
+                    <p class="text-sm text-slate-500">Download via Roboflow API</p>
+                </div>
+                <div class="text-2xl text-slate-400 font-light transform md:rotate-0 rotate-90">→</div>
+                <div class="p-4 bg-slate-100 rounded-lg w-full md:w-auto">
+                    <span class="text-2xl">🧠</span>
+                    <p class="font-semibold mt-2">3. Treinamento</p>
+                    <p class="text-sm text-slate-500">50 épocas com YOLOv8n</p>
+                </div>
+                <div class="text-2xl text-slate-400 font-light transform md:rotate-0 rotate-90">→</div>
+                <div class="p-4 bg-slate-100 rounded-lg w-full md:w-auto">
+                    <span class="text-2xl">📊</span>
+                    <p class="font-semibold mt-2">4. Avaliação</p>
+                    <p class="text-sm text-slate-500">Cálculo de métricas</p>
+                </div>
+                <div class="text-2xl text-slate-400 font-light transform md:rotate-0 rotate-90">→</div>
+                <div class="p-4 bg-slate-100 rounded-lg w-full md:w-auto">
+                    <span class="text-2xl">🚀</span>
+                    <p class="font-semibold mt-2">5. Exportação</p>
+                    <p class="text-sm text-slate-500">Modelo em formato ONNX</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="performance" class="mb-16">
+            <h2 class="text-3xl font-bold text-slate-800 mb-4 text-center">Análise de Desempenho por Classe</h2>
+            <p class="text-center text-slate-600 mb-8 max-w-3xl mx-auto">Esta seção permite uma análise interativa do desempenho do modelo para cada uma das 16 classes de objetos. Selecione uma métrica para visualizá-la no gráfico e clique em uma barra para ver detalhes e insights sobre o desempenho da classe correspondente.</p>
+            
+            <div class="flex justify-center space-x-2 mb-8" id="metric-buttons">
+                <button class="btn-metric px-4 py-2 rounded-lg font-semibold bg-white shadow-sm hover:bg-slate-100 transition active" data-metric="map50">mAP50</button>
+                <button class="btn-metric px-4 py-2 rounded-lg font-semibold bg-white shadow-sm hover:bg-slate-100 transition" data-metric="map95">mAP50-95</button>
+                <button class="btn-metric px-4 py-2 rounded-lg font-semibold bg-white shadow-sm hover:bg-slate-100 transition" data-metric="p">Precisão</button>
+                <button class="btn-metric px-4 py-2 rounded-lg font-semibold bg-white shadow-sm hover:bg-slate-100 transition" data-metric="r">Recall</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+                <div id="details-card" class="bg-white p-6 rounded-xl shadow-md lg:sticky top-24">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">Detalhes da Classe</h3>
+                    <div id="details-content">
+                        <p class="text-slate-500">Clique em uma barra no gráfico para ver os detalhes.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="conclusion" class="bg-white p-8 rounded-xl shadow-md">
+            <h2 class="text-3xl font-bold text-slate-800 mb-8 text-center">Conclusão e Recomendações</h2>
+             <p class="text-center text-slate-600 mb-10 max-w-3xl mx-auto">O modelo YOLOv8n demonstrou ser uma ferramenta eficaz, alcançando um bom desempenho geral. No entanto, a análise por classe revelou áreas que necessitam de melhoria, principalmente para objetos com poucas amostras ou características visuais menos distintas. </p>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-700 mb-3">Insights Principais</h3>
+                    <ul class="space-y-2 text-slate-600 list-disc list-inside">
+                        <li>O modelo tem <span class="font-semibold text-emerald-600">excelente desempenho</span> em classes com características visuais claras e consistentes como Defesas Aéreas e Torres dos Magos.</li>
+                        <li>Classes com baixo recall, como o Altar do Rei e o Castelo do Clã, indicam uma <span class="font-semibold text-amber-600">sub-representação ou alta variabilidade</span> no dataset.</li>
+                        <li>A classe "RcPad" não foi detectada, apontando para uma <span class="font-semibold text-red-600">falha crítica</span> de aprendizado para essa categoria específica.</li>
+                    </ul>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-bold text-slate-700 mb-3">Próximos Passos</h3>
+                    <ul class="space-y-2 text-slate-600 list-disc list-inside">
+                        <li><span class="font-semibold">Aumentar o Dataset:</span> Adicionar mais imagens das classes com baixo desempenho, cobrindo diferentes ângulos e níveis.</li>
+                        <li><span class="font-semibold">Ajustar Hiperparâmetros:</span> Experimentar com diferentes taxas de aprendizado e otimizadores.</li>
+                        <li><span class="font-semibold">Explorar Modelos Maiores:</span> Testar versões maiores do YOLOv8 (e.g., yolov8m) para maior capacidade de aprendizado.</li>
+                         <li><span class="font-semibold">Aumentar Resolução:</span> Utilizar imagens de maior resolução (`imgsz`) para melhorar a detecção de detalhes.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const performanceData = {
+                'AD': { p: 0.899, r: 1.0, map50: 0.995, map95: 0.816, note: 'Desempenho excelente, com recall perfeito e alta precisão.' },
+                'AirSweeper': { p: 0.416, r: 0.0748, map50: 0.340, map95: 0.187, note: 'Desempenho fraco, especialmente no Recall, indicando que o modelo falha em detectar a maioria das instâncias.' },
+                'BombTower': { p: 0.916, r: 0.914, map50: 0.954, map95: 0.759, note: 'Desempenho muito bom, com alta precisão e recall.' },
+                'Canon': { p: 0.910, r: 0.946, map50: 0.975, map95: 0.792, note: 'Desempenho muito bom, com detecção confiável.' },
+                'ClanCastle': { p: 0.468, r: 0.208, map50: 0.387, map95: 0.276, note: 'Desempenho fraco, sugerindo dificuldade na identificação devido a variações ou poucas amostras.' },
+                'Eagle': { p: 0.850, r: 0.942, map50: 0.948, map95: 0.825, note: 'Desempenho muito bom.' },
+                'Inferno': { p: 0.907, r: 0.972, map50: 0.983, map95: 0.755, note: 'Desempenho muito bom, com detecção consistente.' },
+                'KingPad': { p: 0.287, r: 0.052, map50: 0.291, map95: 0.181, note: 'Desempenho muito fraco, o modelo raramente detecta esta estrutura.' },
+                'Mortar': { p: 0.904, r: 0.917, map50: 0.959, map95: 0.787, note: 'Desempenho muito bom.' },
+                'QueenPad': { p: 0.616, r: 0.135, map50: 0.441, map95: 0.315, note: 'Desempenho fraco, com recall muito baixo.' },
+                'RcPad': { p: 0.000, r: 0.000, map50: 0.0776, map95: 0.0452, note: 'Falha total na detecção. O modelo não identificou nenhuma instância.' },
+                'Scattershot': { p: 0.894, r: 0.854, map50: 0.933, map95: 0.707, note: 'Desempenho muito bom.' },
+                'TH13': { p: 0.655, r: 1.000, map50: 0.995, map95: 0.868, note: 'Desempenho excelente, especialmente no recall.' },
+                'WardenPad': { p: 1.000, r: 0.000, map50: 0.304, map95: 0.219, note: 'Precisão perfeita, mas recall zero. Indica que o modelo não generalizou para esta classe.' },
+                'WizzTower': { p: 0.933, r: 1.000, map50: 0.995, map95: 0.826, note: 'Desempenho excelente.' },
+                'Xbow': { p: 0.750, r: 0.990, map50: 0.976, map95: 0.757, note: 'Desempenho muito bom, com recall quase perfeito.' }
+            };
+
+            const labels = Object.keys(performanceData);
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            let performanceChart;
+
+            const metricConfig = {
+                map50: { label: 'mAP50', backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)' },
+                map95: { label: 'mAP50-95', backgroundColor: 'rgba(14, 165, 233, 0.7)', borderColor: 'rgba(14, 165, 233, 1)' },
+                p: { label: 'Precisão', backgroundColor: 'rgba(16, 185, 129, 0.7)', borderColor: 'rgba(16, 185, 129, 1)' },
+                r: { label: 'Recall', backgroundColor: 'rgba(217, 119, 6, 0.7)', borderColor: 'rgba(217, 119, 6, 1)' }
+            };
+            
+            function updateChart(metric = 'map50') {
+                const data = labels.map(label => performanceData[label][metric]);
+                const config = metricConfig[metric];
+
+                if (performanceChart) {
+                    performanceChart.data.datasets[0].data = data;
+                    performanceChart.data.datasets[0].label = config.label;
+                    performanceChart.data.datasets[0].backgroundColor = config.backgroundColor;
+                    performanceChart.data.datasets[0].borderColor = config.borderColor;
+                    performanceChart.options.scales.y.max = 1.0;
+                    performanceChart.update();
+                } else {
+                    performanceChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: config.label,
+                                data: data,
+                                backgroundColor: config.backgroundColor,
+                                borderColor: config.borderColor,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 1.0,
+                                    ticks: {
+                                        color: '#64748b'
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: '#64748b',
+                                        autoSkip: false,
+                                        maxRotation: 90,
+                                        minRotation: 45
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.dataset.label}: ${context.raw.toFixed(3)}`;
+                                        }
+                                    }
+                                }
+                            },
+                            onClick: (event, elements) => {
+                                if (elements.length > 0) {
+                                    const chartElement = elements[0];
+                                    const index = chartElement.index;
+                                    const className = labels[index];
+                                    showDetails(className);
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
+            function showDetails(className) {
+                const details = performanceData[className];
+                const detailsContent = document.getElementById('details-content');
+                
+                detailsContent.innerHTML = `
+                    <div class="fade-in">
+                        <h4 class="text-2xl font-bold text-blue-600 mb-3">${className}</h4>
+                        <div class="space-y-2 text-slate-600">
+                            <p><strong>Precisão:</strong> <span class="font-semibold text-slate-800">${details.p.toFixed(3)}</span></p>
+                            <p><strong>Recall:</strong> <span class="font-semibold text-slate-800">${details.r.toFixed(3)}</span></p>
+                            <p><strong>mAP50:</strong> <span class="font-semibold text-slate-800">${details.map50.toFixed(3)}</span></p>
+                            <p><strong>mAP50-95:</strong> <span class="font-semibold text-slate-800">${details.map95.toFixed(3)}</span></p>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-200">
+                             <h5 class="text-md font-semibold text-slate-700 mb-2">Observação:</h5>
+                             <p class="text-slate-600">${details.note}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('metric-buttons').addEventListener('click', (event) => {
+                if (event.target.tagName === 'BUTTON') {
+                    const metric = event.target.dataset.metric;
+                    document.querySelectorAll('.btn-metric').forEach(btn => btn.classList.remove('active'));
+                    event.target.classList.add('active');
+                    updateChart(metric);
+                }
+            });
+
+            updateChart();
+            showDetails('AD'); 
+        });
+    </script>
+</body>
+</html>
